@@ -16,9 +16,8 @@ print("Server socket is listening...")
 while True:
     c, addr = s.accept()
     print("received connection from "+str(addr)) ## addr is tuple: (address, port)
-    c.send('Thank you for connecting!\n'.encode())
+    c.send('Thank you for connecting!'.encode())
     c.close()
-
 
 #First of all we import socket which is necessary.
 

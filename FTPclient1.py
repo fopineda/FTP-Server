@@ -79,6 +79,64 @@ def isErrorConnect(rDict, request):
         errorConnect = True
     return errorConnect
 
+### FTPclient2.py functions
+def checkCode(code):
+    # Function is given the code part of reply and parses it to see if it is indeed a value between 100 and 599 and
+    # also if all the characters in the code are digits
+    digitList = list(range(0,10))
+    codeNotDigits = False
+    codeNotInRange = False
+    codeError = False
+    try:
+        if not 100 <= int(code) <= 599:
+            codeNotInRange = True
+    except Exception as err:
+        codeNotInRange = True
+    try: 
+        for num in code:
+            if int(num) not in digitList:
+                codeNotDigits = True
+    except Exception as err:
+        codeNotDigits = True
+    if codeNotInRange == True or codeNotDigits == True:
+        codeError = True
+    return code, codeError
+
+def checkreplytext(text):
+    # Function is given the text part of the reply to see if the characters inside are indeed any of the 128 ASCII
+    # characters except for <CR> and <LF>
+    replyTextError = False
+    crlfError = False
+    foundLetter = False
+    for letter in text:
+        if ord(letter) != 32 and ord(letter) != 13 and ord(letter) != 10: # checks if username/password contains ascii letter
+            foundLetter = True
+        if ord(letter) > 127: # checks username to see if it fits ASCII standard
+            replyTextError = True
+            break
+    if foundLetter ==  False:
+        replyTextError = True
+    if "\r\n" not in text:
+       crlfError = True 
+    return text, replyTextError, crlfError
+
+def receiveReplies(str):
+    splitReply = str.split(" ",1)
+    if len(splitReply) > 1:
+        code, codeError = checkCode(splitReply[0])
+        text, replyTextError, crlfError = checkreplytext(splitReply[1])
+
+        if codeError:
+            print("ERROR -- reply-code")
+        elif replyTextError:
+            print("ERROR -- reply-text")
+        elif crlfError:
+            print("ERROR -- <CRLF>")
+        else:
+            print("FTP reply "+code+" accepted.  Text is : "+text.rstrip("\r\n"))
+    else:
+        print("ERROR -- reply-code")
+
 # Takes in the requests and loops throught them. It takes them one by one to see if it falls under connect, get, or quit
 # once there it will do the appropriate checks.
 requestDict = {}
@@ -86,7 +144,7 @@ for request in sys.stdin:
     sys.stdout.write(request)
     splitRequest = request.split(" ",1)
 
-    if splitRequest[0].lower().rstrip("\n")  == "connect":  # needs work
+    if splitRequest[0].lower().rstrip("\n")  == "connect":  
         serverHost, serverPort, serverHostError ,serverPortError = checkConnect(splitRequest[1:])
         if serverHostError:
             print("ERROR -- server-host") 
@@ -96,7 +154,18 @@ for request in sys.stdin:
             if "connect" in requestDict:
                 del requestDict["connect"]
             requestDict["connect"] = 8000
-            print("CONNECT accepted for FTP server at host "+serverHost+" and port "+serverPort)
+            # set up client socket
+            try:
+                client_socket = socket.socket()
+                client_socket.connect((serverHost, serverPort))  # gets hostname(addr), user input arguement (Port)
+                print("CONNECT accepted for FTP server at host "+serverHost+" and port "+serverPort)
+                # recieve data from server "220 COMP 431 FTP server ready"
+                received_data = client_socket.recv(1025)
+                receiveReplies(received_data.decode())
+
+            except:
+                print("Error message on client socket")
+            
             sys.stdout.write("USER anonymous\r\n")
             sys.stdout.write("PASS guest@\r\n")
             sys.stdout.write("SYST\r\n")
