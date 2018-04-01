@@ -167,10 +167,11 @@ for request in sys.stdin:
         else:   
             if "connect" in requestDict:
                 del requestDict["connect"]
-            requestDict["connect"] = 8000
+            requestDict["connect"] = sys.argv[1] # 
             try:
                 # CONNECT classroom.cs.unc.edu 9000
-                client_socket = socket.socket()
+                # create control socket
+                client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 client_socket.connect((serverHost, serverPort))
             except:
                 sys.stdout.write("CONNECT failed\r\n")
@@ -208,6 +209,9 @@ for request in sys.stdin:
             portNumber = str(int(requestDict.get("connect"))//256)+","+str(int(requestDict.get("connect"))%256)
             hostPort = my_ip+","+portNumber
             print("GET accepted for "+pathname)
+            # create welcome socket
+            welcomeSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            welcomeSocket.connect((socket.gethostbyname(socket.gethostname()), ))
             sys.stdout.write("PORT "+hostPort+"\r\n")
             # client_socket.send("PORT "+hostPort+"\r\n".encode())
             # received_data = client_socket.recv(1024)
