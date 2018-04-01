@@ -125,7 +125,6 @@ def receiveReplies(str):
     if len(splitReply) > 1:
         code, codeError = checkCode(splitReply[0])
         text, replyTextError, crlfError = checkreplytext(splitReply[1])
-
         if codeError:
             print("ERROR -- reply-code")
         elif replyTextError:
@@ -136,6 +135,21 @@ def receiveReplies(str):
             print("FTP reply "+code+" accepted.  Text is : "+text.rstrip("\r\n"))
     else:
         print("ERROR -- reply-code")
+
+# def setupSocket(addr, port):
+#     # set up client socket
+#     try:
+#         client_socket = socket.socket()
+#         client_socket.connect((addr, port))
+#         print("CONNECT accepted for FTP server at host "+serverHost+" and port "+serverPort)
+#         received_data = client_socket.recv(1024)
+#         receiveReplies(received_data.decode())
+#         return True
+
+
+#     except:
+#         sys.stdout.write("CONNECT failed\r\n")
+#         return False
 
 # Takes in the requests and loops throught them. It takes them one by one to see if it falls under connect, get, or quit
 # once there it will do the appropriate checks.
@@ -154,23 +168,32 @@ for request in sys.stdin:
             if "connect" in requestDict:
                 del requestDict["connect"]
             requestDict["connect"] = 8000
-            # set up client socket
             try:
+                # CONNECT classroom.cs.unc.edu 9000
                 client_socket = socket.socket()
-                client_socket.connect((serverHost, serverPort))  # gets hostname(addr), user input arguement (Port)
-                print("CONNECT accepted for FTP server at host "+serverHost+" and port "+serverPort)
-                # recieve data from server "220 COMP 431 FTP server ready"
-                received_data = client_socket.recv(1025)
-                receiveReplies(received_data.decode())
-
+                client_socket.connect((serverHost, serverPort))
             except:
-                print("Error message on client socket")
-            
+                sys.stdout.write("CONNECT failed\r\n")
+                break
+            print("CONNECT accepted for FTP server at host "+serverHost+" and port "+serverPort)
+            received_data = client_socket.recv(1024)
+            receiveReplies(received_data.decode())
             sys.stdout.write("USER anonymous\r\n")
+            client_socket.send("USER anonymous\r\n".encode())
+            received_data = client_socket.recv(1024)
+            receiveReplies(received_data.decode())
             sys.stdout.write("PASS guest@\r\n")
+            client_socket.send("PASS guest@\r\n".encode())
+            received_data = client_socket.recv(1024)
+            receiveReplies(received_data.decode())
             sys.stdout.write("SYST\r\n")
+            client_socket.send("SYST\r\n".encode())
+            received_data = client_socket.recv(1024)
+            receiveReplies(received_data.decode())
             sys.stdout.write("TYPE I\r\n")
-
+            client_socket.send("TYPE I\r\n".encode())
+            received_data = client_socket.recv(1024)
+            receiveReplies(received_data.decode())
 
     elif splitRequest[0].lower().rstrip("\n")  == "get":
         errorConnect = isErrorConnect(requestDict, "get")
@@ -183,10 +206,16 @@ for request in sys.stdin:
             requestDict["get"] = pathname
             my_ip = socket.gethostbyname(socket.gethostname()).replace(".",",")
             portNumber = str(int(requestDict.get("connect"))//256)+","+str(int(requestDict.get("connect"))%256)
-            hortPort = my_ip+","+portNumber
+            hostPort = my_ip+","+portNumber
             print("GET accepted for "+pathname)
-            sys.stdout.write("PORT "+hortPort+"\r\n") 
+            sys.stdout.write("PORT "+hostPort+"\r\n")
+            # client_socket.send("PORT "+hostPort+"\r\n".encode())
+            # received_data = client_socket.recv(1024)
+            # receiveReplies(received_data.decode())
             sys.stdout.write("RETR "+pathname+"\r\n")
+            # client_socket.send("RETR "+pathname+"\r\n".encode())
+            # received_data = client_socket.recv(1024)
+            # receiveReplies(received_data.decode())
             requestDict["connect"] = int(requestDict.get("connect")) + 1
 
 
