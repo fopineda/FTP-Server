@@ -136,21 +136,6 @@ def receiveReplies(str):
     else:
         print("ERROR -- reply-code")
 
-# def setupSocket(addr, port):
-#     # set up client socket
-#     try:
-#         client_socket = socket.socket()
-#         client_socket.connect((addr, port))
-#         print("CONNECT accepted for FTP server at host "+serverHost+" and port "+serverPort)
-#         received_data = client_socket.recv(1024)
-#         receiveReplies(received_data.decode())
-#         return True
-
-
-#     except:
-#         sys.stdout.write("CONNECT failed\r\n")
-#         return False
-
 # Takes in the requests and loops throught them. It takes them one by one to see if it falls under connect, get, or quit
 # once there it will do the appropriate checks.
 requestDict = {}
@@ -167,33 +152,33 @@ for request in sys.stdin:
         else:   
             if "connect" in requestDict:
                 del requestDict["connect"]
-            requestDict["connect"] = sys.argv[1] # 
+            requestDict["connect"] = sys.argv[1] # records port number provided in command line
             try:
-                # CONNECT classroom.cs.unc.edu 9000
-                # create control socket
-                client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                client_socket.connect((serverHost, serverPort))
+                # create control socket (FTP-control connection)
+                # Ex: CONNECT classroom.cs.unc.edu 9000
+                control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                control_socket.connect((serverHost, serverPort))
             except:
                 sys.stdout.write("CONNECT failed\r\n")
                 break
             print("CONNECT accepted for FTP server at host "+serverHost+" and port "+serverPort)
-            received_data = client_socket.recv(1024)
+            received_data = control_socket.recv(1024)
             receiveReplies(received_data.decode())
             sys.stdout.write("USER anonymous\r\n")
-            client_socket.send("USER anonymous\r\n".encode())
-            received_data = client_socket.recv(1024)
+            control_socket.send("USER anonymous\r\n".encode())
+            received_data = control_socket.recv(1024)
             receiveReplies(received_data.decode())
             sys.stdout.write("PASS guest@\r\n")
-            client_socket.send("PASS guest@\r\n".encode())
-            received_data = client_socket.recv(1024)
+            control_socket.send("PASS guest@\r\n".encode())
+            received_data = control_socket.recv(1024)
             receiveReplies(received_data.decode())
             sys.stdout.write("SYST\r\n")
-            client_socket.send("SYST\r\n".encode())
-            received_data = client_socket.recv(1024)
+            control_socket.send("SYST\r\n".encode())
+            received_data = control_socket.recv(1024)
             receiveReplies(received_data.decode())
             sys.stdout.write("TYPE I\r\n")
-            client_socket.send("TYPE I\r\n".encode())
-            received_data = client_socket.recv(1024)
+            control_socket.send("TYPE I\r\n".encode())
+            received_data = control_socket.recv(1024)
             receiveReplies(received_data.decode())
 
     elif splitRequest[0].lower().rstrip("\n")  == "get":
@@ -209,24 +194,38 @@ for request in sys.stdin:
             portNumber = str(int(requestDict.get("connect"))//256)+","+str(int(requestDict.get("connect"))%256)
             hostPort = my_ip+","+portNumber
             print("GET accepted for "+pathname)
-            # create welcome socket
-            welcomeSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            welcomeSocket.connect((socket.gethostbyname(socket.gethostname()), ))
+            try:
+                # create welcome socket (FTP-data connection)
+                data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                data_socket.bind((socket.gethostbyname(socket.gethostname()), requestDict.get("connect"))) #client hostname, command line arguement port number
+                data_socket.listen(1)
+            except:
+                sys.stdout.write("GET failed, FTP-data port not allocated\r\n")
+                break                  #?
+            
             sys.stdout.write("PORT "+hostPort+"\r\n")
-            # client_socket.send("PORT "+hostPort+"\r\n".encode())
-            # received_data = client_socket.recv(1024)
-            # receiveReplies(received_data.decode())
+            control_socket.send("PORT "+hostPort+"\r\n".encode())
+            received_data = control_socket.recv(1024)
+            receiveReplies(received_data.decode())
+
             sys.stdout.write("RETR "+pathname+"\r\n")
-            # client_socket.send("RETR "+pathname+"\r\n".encode())
-            # received_data = client_socket.recv(1024)
-            # receiveReplies(received_data.decode())
+            control_socket.send("RETR "+pathname+"\r\n".encode())
+            received_data = control_socket.recv(1024)
+            receiveReplies(received_data.decode())
+
+            while True:
+                connection_socket, addr = data_socket.accept()
+                data = connection_socket.recv(1024)
+                connection_socket.close()
+
+            # start here
             requestDict["connect"] = int(requestDict.get("connect")) + 1
 
 
     elif splitRequest[0].lower().rstrip("\n")  == "quit":
         errorConnect = isErrorConnect(requestDict, "quit")
         if len(splitRequest) > 1:
-            print("ERROR -- request")      # not sure
+            print("ERROR -- request")      
         elif errorConnect:
             print("ERROR -- expecting CONNECT")
         else:
