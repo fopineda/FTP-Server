@@ -136,6 +136,12 @@ def receiveReplies(str):
     else:
         print("ERROR -- reply-code")
 
+
+def assure_path_exists(path):
+    # used to check if a certain path (directory/file) exists. If not then create it
+    if not os.path.exists(path):
+        os.makedirs(path)
+
 # Takes in the requests and loops throught them. It takes them one by one to see if it falls under connect, get, or quit
 # once there it will do the appropriate checks.
 requestDict = {}
@@ -159,7 +165,7 @@ for request in sys.stdin:
                 control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 control_socket.connect((serverHost, serverPort))
             except:
-                sys.stdout.write("CONNECT failed\r\n")
+                print("CONNECT failed")
                 break
             print("CONNECT accepted for FTP server at host "+serverHost+" and port "+serverPort)
             received_data = control_socket.recv(1024)
@@ -200,26 +206,29 @@ for request in sys.stdin:
                 data_socket.bind((socket.gethostbyname(socket.gethostname()), requestDict.get("connect"))) #client hostname, command line arguement port number
                 data_socket.listen(1)
             except:
-                sys.stdout.write("GET failed, FTP-data port not allocated\r\n")
+                print("GET failed, FTP-data port not allocated")
                 break                  #?
             
             sys.stdout.write("PORT "+hostPort+"\r\n")
             control_socket.send("PORT "+hostPort+"\r\n".encode())
             received_data = control_socket.recv(1024)
             receiveReplies(received_data.decode())
+            requestDict["connect"] = int(requestDict.get("connect")) + 1
 
             sys.stdout.write("RETR "+pathname+"\r\n")
             control_socket.send("RETR "+pathname+"\r\n".encode())
             received_data = control_socket.recv(1024)
             receiveReplies(received_data.decode())
 
-            while True:
-                connection_socket, addr = data_socket.accept()
-                data = connection_socket.recv(1024)
-                connection_socket.close()
+            # read the bytes for the requested file
+            connection_socket, addr = data_socket.accept()
+            data = connection_socket.recv(1024)
+            connection_socket.close()
 
             # start here
-            requestDict["connect"] = int(requestDict.get("connect")) + 1
+            assure_path_exists("./retr_files")  # Checks if retr_files exits, if not create, otherwise do nothing
+            ### ???
+            
 
 
     elif splitRequest[0].lower().rstrip("\n")  == "quit":

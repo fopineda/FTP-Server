@@ -1,6 +1,7 @@
 import sys
 import shutil
 import os
+import socket
 
 # Felipe Osiel Pineda
 # 730132665
@@ -141,11 +142,24 @@ def get_absolute_file_path(first_character_stripped_filepath):
 # Once it found the it's correct command, it will call the check function to see if has any errors. The functions (functions above)
 # will return booelan values that will be examined to see if falls in a specific error.
 command_list = sys.stdin.read().splitlines(keepends=True)
-sys.stdout.write("220 COMP 431 FTP server ready.\r\n")
+
 FTPList= []
 retrCount = 0
-for command in command_list:
-    sys.stdout.write(command)
+# for command in command_list:
+#     sys.stdout.write(command)
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.setsockopt(socket.SOL.SOCKET, socket.SO_RESUSEADDR, 1)
+server_socket.bind(("", sys.argv[1]))
+server_socket.listen(1)    # allow only one connection at a time
+while True:
+    connect_socket, address = server_socket.accept()
+    sys.stdout.write("220 COMP 431 FTP server ready.\r\n")
+    server_socket.send("220 COMP 431 FTP server ready.\r\n".encode())
+    user_data = server_socket.recv(1024)
+    print(user_data.decode())
+    
+
+    # replace command with variable containing the received data
     splitCommand = command.split(" ",1)
 
 
