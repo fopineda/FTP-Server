@@ -1,6 +1,7 @@
 import sys
 import shutil
 import os
+from socket import *
 import socket
 
 # Felipe Osiel Pineda
@@ -141,123 +142,152 @@ def get_absolute_file_path(first_character_stripped_filepath):
 # It then checks to see in which command it will fall under which. If it doesn't fall under any command, then it will be a command error.
 # Once it found the it's correct command, it will call the check function to see if has any errors. The functions (functions above)
 # will return booelan values that will be examined to see if falls in a specific error.
-command_list = sys.stdin.read().splitlines(keepends=True)
+# command_list = sys.stdin.read().splitlines(keepends=True)
 
 FTPList= []
 retrCount = 0
-# for command in command_list:
-#     sys.stdout.write(command)
+client_sent_portNumber = 0
+client_sent_hostAddress = 0
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.setsockopt(socket.SOL.SOCKET, socket.SO_RESUSEADDR, 1)
+server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # #caled before bind to allow reusing the same port.
 server_socket.bind(("", sys.argv[1]))
 server_socket.listen(1)    # allow only one connection at a time
 while True:
     connect_socket, address = server_socket.accept()
     sys.stdout.write("220 COMP 431 FTP server ready.\r\n")
     server_socket.send("220 COMP 431 FTP server ready.\r\n".encode())
-    user_data = server_socket.recv(1024)
-    print(user_data.decode())
-    
-
-    # replace command with variable containing the received data
-    splitCommand = command.split(" ",1)
+    while True:
+        command = server_socket.recv(1024) # commands from client
+        print(command)
+        splitCommand = command.split(" ",1)
 
 
     if splitCommand[0].lower()  == "user":
         parameterError, crlfError = checkUserOrPass(splitCommand)
         if parameterError == True or crlfError == True:
-            sys.stdout.write("501 Syntax error in parameter.\r\n") 
+            sys.stdout.write("501 Syntax error in parameter.\r\n")
+            server_socket.send("501 Syntax error in parameter.\r\n".encode())
         elif code530(FTPList, "user"):
             sys.stdout.write("530 Not logged in.\r\n")
+            server_socket.send("530 Not logged in.\r\n".encode())
         elif code503(FTPList, "user"):
-            sys.stdout.write("503 Bad sequence of commands.\r\n")   
+            sys.stdout.write("503 Bad sequence of commands.\r\n")  
+            server_socket.send("503 Bad sequence of commands.\r\n".encode()) 
         else:
             FTPList.append("user")
             sys.stdout.write("331 Guest access OK, send password.\r\n")  
+            server_socket.send("331 Guest access OK, send password.\r\n".encode())
 
 
     elif splitCommand[0].lower()  == "pass":
         parameterError, crlfError = checkUserOrPass(splitCommand)
         if parameterError == True or crlfError == True:
             sys.stdout.write("501 Syntax error in parameter.\r\n")
+            server_socket.send("501 Syntax error in parameter.\r\n".encode())
         elif code530(FTPList, "pass"):
             sys.stdout.write("530 Not logged in.\r\n")
+            server_socket.send("530 Not logged in.\r\n".encode())
         elif code503(FTPList, "pass"):
-            sys.stdout.write("503 Bad sequence of commands.\r\n")    
+            sys.stdout.write("503 Bad sequence of commands.\r\n")
+            server_socket.send("503 Bad sequence of commands.\r\n".encode())    
         else:
             FTPList.append("pass")
-            sys.stdout.write("230 Guest login OK.\r\n")    
+            sys.stdout.write("230 Guest login OK.\r\n") 
+            server_socket.send("230 Guest login OK.\r\n".encode())   
 
 
     elif splitCommand[0].lower()  == "type":
         typeCodeError, crlfError, typeChar = checkType(splitCommand)
         if typeCodeError == True or crlfError == True:
-            sys.stdout.write("501 Syntax error in parameter.\r\n")   
+            sys.stdout.write("501 Syntax error in parameter.\r\n") 
+            server_socket.send("501 Syntax error in parameter.\r\n".encode())  
         elif code530(FTPList, "type"):
             sys.stdout.write("530 Not logged in.\r\n")
+            server_socket.send("530 Not logged in.\r\n".encode())
         elif code503(FTPList, "type"):
             sys.stdout.write("503 Bad sequence of commands.\r\n")
+            server_socket.send("503 Bad sequence of commands.\r\n".encode())
         else:
             if typeChar == "A":
-                sys.stdout.write("200 Type set to A.\r\n")   
+                sys.stdout.write("200 Type set to A.\r\n") 
+                server_socket.send("200 Type set to A.\r\n".encode())  
                 FTPList.append("type a")
             elif typeChar == "I":
-                sys.stdout.write("200 Type set to I.\r\n")   
+                sys.stdout.write("200 Type set to I.\r\n") 
+                server_socket.send("200 Type set to I.\r\n".encode())  
                 FTPList.append("type i")
             else:
-                sys.stdout.write("501 Syntax error in parameter.\r\n")    
+                sys.stdout.write("501 Syntax error in parameter.\r\n")
+                server_socket.send("01 Syntax error in parameter.\r\n".encode())    
 
 
     elif command[0:4].lower()  == "syst":
         crlfError = checkNoParams(command)
         if crlfError:
-            sys.stdout.write("501 Syntax error in parameter.\r\n")   
+            sys.stdout.write("501 Syntax error in parameter.\r\n")
+            server_socket.send("501 Syntax error in parameter.\r\n".encode())   
         elif code530(FTPList, "syst"):
             sys.stdout.write("530 Not logged in.\r\n")
+            server_socket.send("530 Not logged in.\r\n".encode())
         elif code503(FTPList, "syst"):
             sys.stdout.write("503 Bad sequence of commands.\r\n")
+            server_socket.send("503 Bad sequence of commands.\r\n".encode())
         else:
-            sys.stdout.write("215 UNIX Type: L8.\r\n")    
+            sys.stdout.write("215 UNIX Type: L8.\r\n") 
+            server_socket.send("215 UNIX Type: L8.\r\n".encode())   
             FTPList.append("syst")
 
 
     elif command[0:4].lower()  == "noop":
         crlfError = checkNoParams(command)
         if crlfError:
-            sys.stdout.write("501 Syntax error in parameter.\r\n")   
+            sys.stdout.write("501 Syntax error in parameter.\r\n")
+            server_socket.send("501 Syntax error in parameter.\r\n".encode())   
         elif code530(FTPList, "noop"):
             sys.stdout.write("530 Not logged in.\r\n")
+            server_socket.send("530 Not logged in.\r\n".encode())
         elif code503(FTPList, "noop"):
             sys.stdout.write("503 Bad sequence of commands.\r\n")
+            server_socket.send("503 Bad sequence of commands.\r\n".encode())
         else:
             sys.stdout.write("200 Command OK.\r\n")
+            server_socket.send("200 Command OK.\r\n".encode())
             FTPList.append("noop")
 
 
     elif command[0:4].lower()  == "quit":
         crlfError = checkNoParams(command)
         if crlfError:
-            sys.stdout.write("501 Syntax error in parameter.\r\n")   
+            sys.stdout.write("501 Syntax error in parameter.\r\n")
+            server_socket.send("501 Syntax error in parameter.\r\n".encode())   
         else:
             FTPList = []  ## Clearing the list
-            sys.stdout.write("200 Command OK.\r\n")    
+            sys.stdout.write("200 Command OK.\r\n")  
+            server_socket.send("200 Command OK.\r\n".encode())
+            server_socket.close()  
             break
 
 
     elif splitCommand[0].lower()  == "port":
         parameterError, crlfError = checkPort(command)
         if parameterError == True or crlfError == True:
-            sys.stdout.write("501 Syntax error in parameter.\r\n")   
+            sys.stdout.write("501 Syntax error in parameter.\r\n")
+            server_socket.send("501 Syntax error in parameter.\r\n".encode())   
         elif code530(FTPList, "port"):
             sys.stdout.write("530 Not logged in.\r\n")
+            server_socket.send("530 Not logged in.\r\n".encode())
         elif code503(FTPList, "port"):
             sys.stdout.write("503 Bad sequence of commands.\r\n")
+            server_socket.send("503 Bad sequence of commands.\r\n".encode())
         else:
             ## Assuming the port command is valid all the way (including parameter with six numbers and 5 commas)
             portParameter = command.split()[1].lstrip(" ").split(",") 
             hostAddress = ".".join(portParameter[0:-2])
             portNumber = (int(portParameter[-2]) * 256) + int(portParameter[-1])
+            client_sent_portNumber = portNumber
+            client_sent_hostAddress = hostAddress
             sys.stdout.write("200 Port command successful ("+hostAddress+","+str(portNumber)+").\r\n")
+            server_socket.send("200 Port command successful ("+hostAddress+","+str(portNumber)+").\r\n".encode())
             if "port" in FTPList:
                 FTPList.remove("port")  
             FTPList.append("port")
@@ -266,11 +296,14 @@ while True:
     elif splitCommand[0].lower()  == "retr":
         parameterError, crlfError = checkRetr(splitCommand)
         if parameterError == True or crlfError == True:
-            sys.stdout.write("501 Syntax error in parameter.\r\n")    
+            sys.stdout.write("501 Syntax error in parameter.\r\n")
+            server_socket.send("501 Syntax error in parameter.\r\n".encode())    
         elif code530(FTPList, "retr"):
             sys.stdout.write("530 Not logged in.\r\n")
+            server_socket.send("530 Not logged in.\r\n".encode())
         elif code503(FTPList, "retr"):
             sys.stdout.write("503 Bad sequence of commands.\r\n")
+            server_socket.send("503 Bad sequence of commands.\r\n".encode())
         else:
             assure_path_exists("./retr_files")  # Checks if retr_files exits, if not create, otherwise do nothing
             path = splitCommand[1].rstrip("\r\n")
@@ -281,14 +314,26 @@ while True:
             if os.path.exists(newPath): 
                 retrCount = retrCount + 1
                 sys.stdout.write("150 File status okay.\r\n")
-                shutil.copyfile(newPath, './retr_files/file'+str(retrCount))  
+                server_socket.send("150 File status okay.\r\n".encode())
+                shutil.copyfile(newPath, './retr_files/file'+str(retrCount))
+                #socket connecting to client data (welcoming) socket for file transfer
+                try:
+                    data_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  
+                    data_server_socket.connect(client_sent_hostAddress, client_sent_portNumber)
+                except:
+                    sys.stdout.write("425 Can not open data connection.\r\n")
+                    server_socket.send("425 Can not open data connection.\r\n".encode())
+                # data_server_socket.sendall
                 sys.stdout.write("250 Requested file action completed.\r\n")
+                server_socket.send("250 Requested file action completed.\r\n".encode())
                 if "port" in FTPList:
                     FTPList.remove("port")
             else:
                 sys.stdout.write("550 File not found or access denied.\r\n")
+                server_socket.send("550 File not found or access denied.\r\n".encode())
     else:
         sys.stdout.write("500 Syntax error, command unrecognized.\r\n")
+        server_socket.send("500 Syntax error, command unrecognized.\r\n".encode())
 
 
 

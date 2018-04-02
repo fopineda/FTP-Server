@@ -202,9 +202,9 @@ for request in sys.stdin:
             print("GET accepted for "+pathname)
             try:
                 # create welcome socket (FTP-data connection)
-                data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                data_socket.bind((socket.gethostbyname(socket.gethostname()), requestDict.get("connect"))) #client hostname, command line arguement port number
-                data_socket.listen(1)
+                data_client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                data_client_socket.bind((socket.gethostbyname(socket.gethostname()), requestDict.get("connect"))) #client hostname, command line arguement port number
+                data_client_socket.listen(1)
             except:
                 print("GET failed, FTP-data port not allocated")
                 break                  #?
