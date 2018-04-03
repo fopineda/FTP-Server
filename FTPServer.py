@@ -315,7 +315,7 @@ while True:
                 retrCount = retrCount + 1
                 sys.stdout.write("150 File status okay.\r\n")
                 server_socket.send("150 File status okay.\r\n".encode())
-                shutil.copyfile(newPath, './retr_files/file'+str(retrCount))
+                # shutil.copyfile(newPath, './retr_files/file'+str(retrCount))
                 #socket connecting to client data (welcoming) socket for file transfer
                 try:
                     data_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  
@@ -324,6 +324,8 @@ while True:
                     sys.stdout.write("425 Can not open data connection.\r\n")
                     server_socket.send("425 Can not open data connection.\r\n".encode())
                 # data_server_socket.sendall
+                merchandise_server = open(newPath,"w")
+                data_server_socket.sendall(merchandise_server)
                 sys.stdout.write("250 Requested file action completed.\r\n")
                 server_socket.send("250 Requested file action completed.\r\n".encode())
                 if "port" in FTPList:

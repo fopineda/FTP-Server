@@ -221,9 +221,10 @@ for request in sys.stdin:
             receiveReplies(received_data.decode())
 
             # read the bytes for the requested file
-            connection_socket, addr = data_socket.accept()
-            data = connection_socket.recv(1024)
-            connection_socket.close()
+            while True:
+                connection_socket, addr = data_client_socket.accept()
+                data = connection_socket.recv(1024)
+                connection_socket.close()
 
             # start here
             assure_path_exists("./retr_files")  # Checks if retr_files exits, if not create, otherwise do nothing
