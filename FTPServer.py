@@ -152,12 +152,14 @@ server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # #caled before bind to allow reusing the same port.
 server_socket.bind(("", sys.argv[1]))
 server_socket.listen(1)    # allow only one connection at a time
-while True:
+while True: # to keep the server always running and accept new connections once the inside loop is broken
     connect_socket, address = server_socket.accept()
     sys.stdout.write("220 COMP 431 FTP server ready.\r\n")
     server_socket.send("220 COMP 431 FTP server ready.\r\n".encode())
-    while True:
+    while True: # to handle the client input
         command = server_socket.recv(1024) # commands from client
+        if not command: #check whether the client side has closed the FTP-control connection
+            server_socket.close()
         print(command)
         splitCommand = command.split(" ",1)
 
@@ -262,10 +264,10 @@ while True:
             server_socket.send("501 Syntax error in parameter.\r\n".encode())   
         else:
             FTPList = []  ## Clearing the list
-            sys.stdout.write("200 Command OK.\r\n")  
-            server_socket.send("200 Command OK.\r\n".encode())
+            sys.stdout.write("221 Goodbye\r\n")  
+            server_socket.send("221 Goodbye\r\n".encode())
             server_socket.close()  
-            break
+            break # ??????????????????????????/
 
 
     elif splitCommand[0].lower()  == "port":
@@ -323,9 +325,16 @@ while True:
                 except:
                     sys.stdout.write("425 Can not open data connection.\r\n")
                     server_socket.send("425 Can not open data connection.\r\n".encode())
-                # data_server_socket.sendall
-                merchandise_server = open(newPath,"w")
-                data_server_socket.sendall(merchandise_server)
+                    break  #??????????????????????????
+
+                # reading bytes and sending them
+                merchandise_server = open(newPath, "rb") #r for read, b for binary
+                merchandise_server_chunk = merchandise_server.read(1024)
+                while (merchandise_server_chunk):
+                    data_server_socket.send(merchandise_server_chunk)
+                    data_server_socket.close()
+                    merchandise_server.close()
+                    break
                 sys.stdout.write("250 Requested file action completed.\r\n")
                 server_socket.send("250 Requested file action completed.\r\n".encode())
                 if "port" in FTPList:
