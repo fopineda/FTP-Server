@@ -149,24 +149,19 @@ client_sent_portNumber = 0
 client_sent_hostAddress = 0
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # #caled before bind to allow reusing the same port.
-print("hello")
 server_socket.bind(("", int(sys.argv[1])))
-print("hello2")
 server_socket.listen(1)    # allow only one connection at a time
 while True: # to keep the server always running and accept new connections once the inside loop is broken
-    print("hello3")
     connect_socket, address = server_socket.accept() # waiting???
-    print("hello4")
     sys.stdout.write("220 COMP 431 FTP server ready.\r\n")
-    print("hello5")
-    print("220 COMP 431 FTP server ready.\r\n".encode().decode())
     connect_socket.send("220 COMP 431 FTP server ready.\r\n".encode())
     while True: # to handle the client input
-        command = connect_socket.recv(1024).decode() # commands from client
-        if not command: #check whether the client side has closed the FTP-control connection
+        client_command = connect_socket.recv(1024).decode() # commands from client
+        if not client_command: #check whether the client side has closed the FTP-control connection
             connect_socket.close()
-        print(command)
-        splitCommand = command.split(" ",1)
+            break
+        sys.stdout.write(client_command)
+        splitCommand = client_command.split(" ",1)
 
 
         if splitCommand[0].lower()  == "user":
@@ -228,8 +223,8 @@ while True: # to keep the server always running and accept new connections once 
                     connect_socket.send("01 Syntax error in parameter.\r\n".encode())    
 
 
-        elif command[0:4].lower()  == "syst":
-            crlfError = checkNoParams(command)
+        elif client_command[0:4].lower()  == "syst":
+            crlfError = checkNoParams(client_command)
             if crlfError:
                 sys.stdout.write("501 Syntax error in parameter.\r\n")
                 connect_socket.send("501 Syntax error in parameter.\r\n".encode())   
@@ -245,8 +240,8 @@ while True: # to keep the server always running and accept new connections once 
                 FTPList.append("syst")
 
 
-        elif command[0:4].lower()  == "noop":
-            crlfError = checkNoParams(command)
+        elif client_command[0:4].lower()  == "noop":
+            crlfError = checkNoParams(client_command)
             if crlfError:
                 sys.stdout.write("501 Syntax error in parameter.\r\n")
                 connect_socket.send("501 Syntax error in parameter.\r\n".encode())   
@@ -262,8 +257,8 @@ while True: # to keep the server always running and accept new connections once 
                 FTPList.append("noop")
 
 
-        elif command[0:4].lower()  == "quit":
-            crlfError = checkNoParams(command)
+        elif client_command[0:4].lower()  == "quit":
+            crlfError = checkNoParams(client_command)
             if crlfError:
                 sys.stdout.write("501 Syntax error in parameter.\r\n")
                 connect_socket.send("501 Syntax error in parameter.\r\n".encode())   
@@ -275,7 +270,7 @@ while True: # to keep the server always running and accept new connections once 
 
 
         elif splitCommand[0].lower()  == "port":
-            parameterError, crlfError = checkPort(command)
+            parameterError, crlfError = checkPort(client_command)
             if parameterError == True or crlfError == True:
                 sys.stdout.write("501 Syntax error in parameter.\r\n")
                 connect_socket.send("501 Syntax error in parameter.\r\n".encode())   
@@ -287,7 +282,7 @@ while True: # to keep the server always running and accept new connections once 
                 connect_socket.send("503 Bad sequence of commands.\r\n".encode())
             else:
                 ## Assuming the port command is valid all the way (including parameter with six numbers and 5 commas)
-                portParameter = command.split()[1].lstrip(" ").split(",") 
+                portParameter = client_command.split()[1].lstrip(" ").split(",") 
                 hostAddress = ".".join(portParameter[0:-2])
                 portNumber = (int(portParameter[-2]) * 256) + int(portParameter[-1])
                 client_sent_portNumber = portNumber

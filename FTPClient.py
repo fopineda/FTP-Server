@@ -141,14 +141,12 @@ def assure_path_exists(path):
         os.makedirs(path)
 
 retrCount = 0
-
 # Takes in the requests and loops throught them. It takes them one by one to see if it falls under connect, get, or quit
 # once there it will do the appropriate checks.
 requestDict = {}
 for request in sys.stdin:
     sys.stdout.write(request)
     splitRequest = request.split(" ",1)
-
     if splitRequest[0].lower().rstrip("\n")  == "connect":  
         serverHost, serverPort, serverHostError ,serverPortError = checkConnect(splitRequest[1:])
         if serverHostError:
@@ -162,34 +160,35 @@ for request in sys.stdin:
             try:
                 # create control socket (FTP-control connection)
                 # Ex: CONNECT classroom.cs.unc.edu 9000
-                print("hello")
                 control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                print("hello2")
                 control_socket.connect((serverHost, int(serverPort)))
-                print("hello3")
             except:
                 print("CONNECT failed")
             print("CONNECT accepted for FTP server at host "+serverHost+" and port "+serverPort)
-            
-            received_data = control_socket.recv(1024)
-            print(received_data.decode())
-            receiveReplies(received_data.decode())
-            sys.stdout.write("USER anonymous\r\n")
+            received_data = control_socket.recv(1024).decode()
+            sys.stdout.write(received_data)
+            receiveReplies(received_data)
+
+            # USER-PASS-SYST-TYPE being sent after CONNECT command
+            print("USER anonymous")
             control_socket.send("USER anonymous\r\n".encode())
-            received_data = control_socket.recv(1024)
-            receiveReplies(received_data.decode())
-            sys.stdout.write("PASS guest@\r\n")
+            received_data = control_socket.recv(1024).decode()
+            receiveReplies(received_data)
+
+            print("PASS guest@")
             control_socket.send("PASS guest@\r\n".encode())
-            received_data = control_socket.recv(1024)
-            receiveReplies(received_data.decode())
-            sys.stdout.write("SYST\r\n")
+            received_data = control_socket.recv(1024).decode()
+            receiveReplies(received_data)
+
+            print("SYST")
             control_socket.send("SYST\r\n".encode())
-            received_data = control_socket.recv(1024)
-            receiveReplies(received_data.decode())
-            sys.stdout.write("TYPE I\r\n")
+            received_data = control_socket.recv(1024).decode()
+            receiveReplies(received_data)
+
+            print("TYPE I")
             control_socket.send("TYPE I\r\n".encode())
-            received_data = control_socket.recv(1024)
-            receiveReplies(received_data.decode())
+            received_data = control_socket.recv(1024).decode()
+            receiveReplies(received_data)
 
     elif splitRequest[0].lower().rstrip("\n")  == "get":
         errorConnect = isErrorConnect(requestDict, "get")
@@ -215,15 +214,15 @@ for request in sys.stdin:
             
             sys.stdout.write("PORT "+hostPort+"\r\n")
             control_socket.send("PORT "+hostPort+"\r\n".encode())
-            received_data = control_socket.recv(1024)
-            receiveReplies(received_data.decode())
+            received_data = control_socket.recv(1024).decode()
+            receiveReplies(received_data)
             requestDict["connect"] = int(requestDict.get("connect")) + 1
 
             sys.stdout.write("RETR "+pathname+"\r\n")
             control_socket.send("RETR "+pathname+"\r\n".encode())
             retrCount += 1
-            received_data = control_socket.recv(1024)
-            receiveReplies(received_data.decode())
+            received_data = control_socket.recv(1024).decode()
+            receiveReplies(received_data)
 
             
             connection_socket, addr = data_client_socket.accept()
@@ -253,7 +252,9 @@ for request in sys.stdin:
             requestDict = {}
             print("QUIT accepted, terminating FTP client")
             sys.stdout.write("QUIT\r\n")
-
+            control_socket.send("QUIT\r\n".encode())
+            received_data = control_socket.recv(1024).decode()
+            receiveReplies(received_data)
 
     else:
         print("ERROR -- request")
