@@ -156,10 +156,11 @@ while True: # to keep the server always running and accept new connections once 
     sys.stdout.write("220 COMP 431 FTP server ready.\r\n")
     connect_socket.send("220 COMP 431 FTP server ready.\r\n".encode())
     while True: # to handle the client input
-        client_command = connect_socket.recv(1024).decode() # commands from client
+        client_command = connect_socket.recv(1024) # commands from client
         if not client_command: #check whether the client side has closed the FTP-control connection
             connect_socket.close()
             break
+        client_command = client_command.decode()
         sys.stdout.write(client_command)
         splitCommand = client_command.split(" ",1)
 
@@ -264,10 +265,10 @@ while True: # to keep the server always running and accept new connections once 
                 connect_socket.send("501 Syntax error in parameter.\r\n".encode())   
             else:
                 FTPList = []  ## Clearing the list
-                sys.stdout.write("221 Goodbye\r\n")  
-                connect_socket.send("221 Goodbye\r\n".encode())
-                connect_socket.close()  
-
+                sys.stdout.write("221 Goodbye.\r\n")  
+                connect_socket.send("221 Goodbye.\r\n".encode())
+                # connect_socket.close()  
+                break
 
         elif splitCommand[0].lower()  == "port":
             parameterError, crlfError = checkPort(client_command)

@@ -130,7 +130,7 @@ def receiveReplies(str):
         elif crlfError:
             print("ERROR -- <CRLF>")
         else:
-            print("FTP reply "+code+" accepted.  Text is : "+text.rstrip("\r\n"))
+            print("FTP reply "+code+" accepted. Text is: "+text.rstrip("\r\n"))
     else:
         print("ERROR -- reply-code")
 
@@ -166,26 +166,25 @@ for request in sys.stdin:
                 print("CONNECT failed")
             print("CONNECT accepted for FTP server at host "+serverHost+" and port "+serverPort)
             received_data = control_socket.recv(1024).decode()
-            sys.stdout.write(received_data)
             receiveReplies(received_data)
 
             # USER-PASS-SYST-TYPE being sent after CONNECT command
-            print("USER anonymous")
+            sys.stdout.write("USER anonymous\r\n")
             control_socket.send("USER anonymous\r\n".encode())
             received_data = control_socket.recv(1024).decode()
             receiveReplies(received_data)
 
-            print("PASS guest@")
+            sys.stdout.write("PASS guest@\r\n")
             control_socket.send("PASS guest@\r\n".encode())
             received_data = control_socket.recv(1024).decode()
             receiveReplies(received_data)
 
-            print("SYST")
+            sys.stdout.write("SYST\r\n")
             control_socket.send("SYST\r\n".encode())
             received_data = control_socket.recv(1024).decode()
             receiveReplies(received_data)
 
-            print("TYPE I")
+            sys.stdout.write("TYPE I\r\n")
             control_socket.send("TYPE I\r\n".encode())
             received_data = control_socket.recv(1024).decode()
             receiveReplies(received_data)
@@ -255,6 +254,7 @@ for request in sys.stdin:
             control_socket.send("QUIT\r\n".encode())
             received_data = control_socket.recv(1024).decode()
             receiveReplies(received_data)
+            control_socket.close()
 
     else:
         print("ERROR -- request")
