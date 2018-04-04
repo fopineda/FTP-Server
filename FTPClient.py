@@ -71,8 +71,6 @@ def checkGet(request):
     return pathnameError, pathname
 
 def isErrorConnect(rDict, request):  
-    # For any valid user request that appears before the first CONNECT request, print out the
-    # error message “ERROR -- expecting CONNECT”.
     errorConnect = False
     requestList = ["get", "quit"]
     if request in requestList and "connect" not in rDict:
@@ -142,6 +140,8 @@ def assure_path_exists(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
+retrCount = 0
+
 # Takes in the requests and loops throught them. It takes them one by one to see if it falls under connect, get, or quit
 # once there it will do the appropriate checks.
 requestDict = {}
@@ -162,13 +162,17 @@ for request in sys.stdin:
             try:
                 # create control socket (FTP-control connection)
                 # Ex: CONNECT classroom.cs.unc.edu 9000
+                print("hello")
                 control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                control_socket.connect((serverHost, serverPort))
+                print("hello2")
+                control_socket.connect((serverHost, int(serverPort)))
+                print("hello3")
             except:
                 print("CONNECT failed")
-                break #????????????????????
             print("CONNECT accepted for FTP server at host "+serverHost+" and port "+serverPort)
+            
             received_data = control_socket.recv(1024)
+            print(received_data.decode())
             receiveReplies(received_data.decode())
             sys.stdout.write("USER anonymous\r\n")
             control_socket.send("USER anonymous\r\n".encode())
@@ -208,7 +212,6 @@ for request in sys.stdin:
                 data_client_socket.listen(1)
             except:
                 print("GET failed, FTP-data port not allocated")
-                break                  #??????????????????????????
             
             sys.stdout.write("PORT "+hostPort+"\r\n")
             control_socket.send("PORT "+hostPort+"\r\n".encode())
@@ -218,6 +221,7 @@ for request in sys.stdin:
 
             sys.stdout.write("RETR "+pathname+"\r\n")
             control_socket.send("RETR "+pathname+"\r\n".encode())
+            retrCount += 1
             received_data = control_socket.recv(1024)
             receiveReplies(received_data.decode())
 
@@ -226,12 +230,14 @@ for request in sys.stdin:
                 
 
             # # receive the bytes for the requested file
-            # merchandise_client = open(pathname, "wb+")
-            # while ():
-            #     merchandise_client_chunk = connection_socket.recv(1024)
-            #     merchandise_client.write(merchandise_client_chunk)
-            #     connection_socket.close()
-            #     merchandise_client.close()
+            merchandise_client = open(pathname+"/file"+str(retrCount), "wb+")
+            while True:
+                merchandise_client_chunk = connection_socket.recv(1024)
+                if not merchandise_client_chunk:
+                    connection_socket.close()
+                    merchandise_client.close()
+                    break
+                merchandise_client.write(merchandise_client_chunk)
                 
 
             assure_path_exists("./retr_files")  # Checks if retr_files exits, if not create, otherwise do nothing
