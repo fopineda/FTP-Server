@@ -154,17 +154,19 @@ for request in sys.stdin:
         elif serverPortError:
             print("ERROR -- server-port")       
         else:   
-            if "connect" in requestDict:
-                del requestDict["connect"]
-            requestDict["connect"] = sys.argv[1] # records port number provided in command line
             try:
                 # create control socket (FTP-control connection)
                 # Ex: CONNECT classroom.cs.unc.edu 9000
+                print("CONNECT accepted for FTP server at host "+serverHost+" and port "+serverPort)
                 control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 control_socket.connect((serverHost, int(serverPort)))
             except:
                 print("CONNECT failed")
-            print("CONNECT accepted for FTP server at host "+serverHost+" and port "+serverPort)
+                continue
+            if "connect" in requestDict:
+                del requestDict["connect"]
+            requestDict["connect"] = sys.argv[1] # records port number provided in command line
+            
             received_data = control_socket.recv(1024).decode()
             receiveReplies(received_data)
 
