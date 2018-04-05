@@ -208,26 +208,32 @@ for request in sys.stdin:
                 # create welcome socket (FTP-data connection)
                 data_client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 data_client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # #caled before bind to allow reusing the same port.
-                data_client_socket.bind((socket.gethostbyname(socket.gethostname()), requestDict.get("connect"))) #client hostname, command line arguement port number
+                data_client_socket.bind((socket.gethostbyname(socket.gethostname()), int(requestDict.get("connect")))) #client hostname, command line arguement port number
                 data_client_socket.listen(1)
             except:
                 print("GET failed, FTP-data port not allocated")
+                continue
             
             sys.stdout.write("PORT "+hostPort+"\r\n")
-            control_socket.send("PORT "+hostPort+"\r\n".encode())
+            control_socket.send(str("PORT "+hostPort+"\r\n").encode())
             received_data = control_socket.recv(1024).decode()
             receiveReplies(received_data)
             requestDict["connect"] = int(requestDict.get("connect")) + 1
 
             sys.stdout.write("RETR "+pathname+"\r\n")
-            control_socket.send("RETR "+pathname+"\r\n".encode())
+            control_socket.send(str("RETR "+pathname+"\r\n").encode())
             retrCount += 1
             received_data = control_socket.recv(1024).decode()
             receiveReplies(received_data)
-
             
-            connection_socket, addr = data_client_socket.accept()
-                
+            data_client_socket.settimeout(5)
+            try:
+                connection_socket, addr = data_client_socket.accept()
+            except:
+                received_data = control_socket.recv(1024).decode() # receives 425
+                receiveReplies(received_data)
+                continue
+
 
             # # receive the bytes for the requested file
             merchandise_client = open(pathname+"/file"+str(retrCount), "wb+")
@@ -238,9 +244,30 @@ for request in sys.stdin:
                     merchandise_client.close()
                     break
                 merchandise_client.write(merchandise_client_chunk)
+            
+
+            # print("before if")
+            # found_file_bool = control_socket.recv(1024).decode()  # if the file was found  
+            # if found_file_bool == "True":
+            #     print("inside sfound_file_bool if")
+            #     received_data = control_socket.recv(1024).decode() # receives 150 File status okay.
+            #     receiveReplies(received_data)
+            #     connection_socket, addr = data_client_socket.accept()
+            #     # # receive the bytes for the requested file
+            #     merchandise_client = open(pathname+"/file"+str(retrCount), "wb+")
+            #     while True:
+            #         merchandise_client_chunk = connection_socket.recv(1024)
+            #         if not merchandise_client_chunk:
+            #             connection_socket.close()
+            #             merchandise_client.close()
+            #             break
+            #         merchandise_client.write(merchandise_client_chunk)
                 
 
-            assure_path_exists("./retr_files")  # Checks if retr_files exits, if not create, otherwise do nothing
+                assure_path_exists("./retr_files")  # Checks if retr_files exits, if not create, otherwise do nothing
+            else:
+                print("inside else")
+                continue
             
 
     elif splitRequest[0].lower().rstrip("\n")  == "quit":

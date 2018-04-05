@@ -289,7 +289,7 @@ while True: # to keep the server always running and accept new connections once 
                 client_sent_portNumber = portNumber
                 client_sent_hostAddress = hostAddress
                 sys.stdout.write("200 Port command successful ("+hostAddress+","+str(portNumber)+").\r\n")
-                connect_socket.send("200 Port command successful ("+hostAddress+","+str(portNumber)+").\r\n".encode())
+                connect_socket.send(str("200 Port command successful ("+hostAddress+","+str(portNumber)+").\r\n").encode())
                 if "port" in FTPList:
                     FTPList.remove("port")  
                 FTPList.append("port")
@@ -314,10 +314,10 @@ while True: # to keep the server always running and accept new connections once 
                     path = path[1:]
                 newPath = get_absolute_file_path(path)
                 if os.path.exists(newPath): 
+                    # connect_socket.send("True") # send a True to the client for not finding a file
                     retrCount = retrCount + 1
                     sys.stdout.write("150 File status okay.\r\n")
                     connect_socket.send("150 File status okay.\r\n".encode())
-                    # shutil.copyfile(newPath, './retr_files/file'+str(retrCount))
                     #socket connecting to client data (welcoming) socket for file transfer
                     try:
                         data_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  
@@ -325,6 +325,7 @@ while True: # to keep the server always running and accept new connections once 
                     except:
                         sys.stdout.write("425 Can not open data connection.\r\n")
                         connect_socket.send("425 Can not open data connection.\r\n".encode())
+                        continue
 
                     # reading bytes and sending them
                     merchandise_server = open(newPath, "rb") #r for read, b for binary
@@ -341,6 +342,7 @@ while True: # to keep the server always running and accept new connections once 
                 else:
                     sys.stdout.write("550 File not found or access denied.\r\n")
                     connect_socket.send("550 File not found or access denied.\r\n".encode())
+                    # connect_socket.send("False") # send a False to the client for not finding a file
         else:
             sys.stdout.write("500 Syntax error, command unrecognized.\r\n")
             connect_socket.send("500 Syntax error, command unrecognized.\r\n".encode())
