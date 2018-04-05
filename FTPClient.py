@@ -165,7 +165,7 @@ for request in sys.stdin:
                 continue
             if "connect" in requestDict:
                 del requestDict["connect"]
-            requestDict["connect"] = sys.argv[1] # records port number provided in command line
+            requestDict["connect"] = sys.argv[1] # records port number provided in command line assoc with connect command
             
             received_data = control_socket.recv(1024).decode()
             receiveReplies(received_data)
@@ -222,53 +222,29 @@ for request in sys.stdin:
 
             sys.stdout.write("RETR "+pathname+"\r\n")
             control_socket.send(str("RETR "+pathname+"\r\n").encode())
-            retrCount += 1
             received_data = control_socket.recv(1024).decode()
             receiveReplies(received_data)
             
-            data_client_socket.settimeout(5)
-            try:
-                connection_socket, addr = data_client_socket.accept()
-            except:
-                received_data = control_socket.recv(1024).decode() # receives 425
-                receiveReplies(received_data)
-                continue
-
-
-            # # receive the bytes for the requested file
-            merchandise_client = open(pathname+"/file"+str(retrCount), "wb+")
-            while True:
-                merchandise_client_chunk = connection_socket.recv(1024)
-                if not merchandise_client_chunk:
-                    connection_socket.close()
-                    merchandise_client.close()
-                    break
-                merchandise_client.write(merchandise_client_chunk)
-            
-
-            # print("before if")
-            # found_file_bool = control_socket.recv(1024).decode()  # if the file was found  
-            # if found_file_bool == "True":
-            #     print("inside sfound_file_bool if")
-            #     received_data = control_socket.recv(1024).decode() # receives 150 File status okay.
-            #     receiveReplies(received_data)
-            #     connection_socket, addr = data_client_socket.accept()
-            #     # # receive the bytes for the requested file
-            #     merchandise_client = open(pathname+"/file"+str(retrCount), "wb+")
-            #     while True:
-            #         merchandise_client_chunk = connection_socket.recv(1024)
-            #         if not merchandise_client_chunk:
-            #             connection_socket.close()
-            #             merchandise_client.close()
-            #             break
-            #         merchandise_client.write(merchandise_client_chunk)
-                
-
+            if received_data == "150 File status okay.\r\n":
                 assure_path_exists("./retr_files")  # Checks if retr_files exits, if not create, otherwise do nothing
+                connection_socket, addr = data_client_socket.accept()
+                str_retrCount = str(retrCount)
+                if retrCount < 10:
+                    str_retrCount = "00" + str_retrCount
+                elif 10 <= retrCount < 100
+                    str_retrCount = "0"+ str_retrCount
+                else:
+                    str_retrCount = str(retrCount)
+                merchandise_client = open("retr_files/file"+str_retrCount, "w+")
+                merchandise_client_chunk = connection_socket.recv(1024)
+                while merchandise_client_chunk:
+                    merchandise_client.write(merchandise_client_chunk.decode())
+                    merchandise_client_chunk = connection_socket.recv(1024)
+                merchandise_client.close() 
+                connection_socket.close()
+                retrCount += 1
             else:
-                print("inside else")
                 continue
-            
 
     elif splitRequest[0].lower().rstrip("\n")  == "quit":
         errorConnect = isErrorConnect(requestDict, "quit")

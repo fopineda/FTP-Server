@@ -328,13 +328,13 @@ while True: # to keep the server always running and accept new connections once 
                         continue
 
                     # reading bytes and sending them
-                    merchandise_server = open(newPath, "rb") #r for read, b for binary
+                    merchandise_server = open("./"+newPath, "r") #r for read, b for binary
                     merchandise_server_chunk = merchandise_server.read(1024)
                     while (merchandise_server_chunk):
-                        data_server_socket.send(merchandise_server_chunk)
-                        data_server_socket.close()
-                        merchandise_server.close()
-                        break
+                        data_server_socket.send(merchandise_server_chunk.encode())
+                        merchandise_server_chunk = merchandise_server.read(1024)
+                    data_server_socket.close()
+                    merchandise_server.close()
                     sys.stdout.write("250 Requested file action completed.\r\n")
                     connect_socket.send("250 Requested file action completed.\r\n".encode())
                     if "port" in FTPList:
