@@ -226,12 +226,13 @@ for request in sys.stdin:
             receiveReplies(received_data)
             
             if received_data == "150 File status okay.\r\n":
+            # if int(received_data[0:4]) < 400:
                 assure_path_exists("./retr_files")  # Checks if retr_files exits, if not create, otherwise do nothing
                 connection_socket, addr = data_client_socket.accept()
                 str_retrCount = str(retrCount)
                 if retrCount < 10:
                     str_retrCount = "00" + str_retrCount
-                elif 10 <= retrCount < 100
+                elif 10 <= retrCount < 100:
                     str_retrCount = "0"+ str_retrCount
                 else:
                     str_retrCount = str(retrCount)

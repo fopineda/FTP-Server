@@ -144,7 +144,6 @@ def get_absolute_file_path(first_character_stripped_filepath):
 # will return booelan values that will be examined to see if falls in a specific error.
 
 FTPList= []
-retrCount = 0
 client_sent_portNumber = 0
 client_sent_hostAddress = 0
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -315,7 +314,6 @@ while True: # to keep the server always running and accept new connections once 
                 newPath = get_absolute_file_path(path)
                 if os.path.exists(newPath): 
                     # connect_socket.send("True") # send a True to the client for not finding a file
-                    retrCount = retrCount + 1
                     sys.stdout.write("150 File status okay.\r\n")
                     connect_socket.send("150 File status okay.\r\n".encode())
                     #socket connecting to client data (welcoming) socket for file transfer
@@ -342,7 +340,6 @@ while True: # to keep the server always running and accept new connections once 
                 else:
                     sys.stdout.write("550 File not found or access denied.\r\n")
                     connect_socket.send("550 File not found or access denied.\r\n".encode())
-                    # connect_socket.send("False") # send a False to the client for not finding a file
         else:
             sys.stdout.write("500 Syntax error, command unrecognized.\r\n")
             connect_socket.send("500 Syntax error, command unrecognized.\r\n".encode())
