@@ -163,6 +163,12 @@ while True: # to keep the server always running and accept new connections once 
         sys.stdout.write(client_command)
         splitCommand = client_command.split(" ",1)
 
+        if (len(splitCommand[0].lower().rstrip("\r\n")) == 3 or len(splitCommand[0].lower().rstrip("\r\n")) == 4):
+            if splitCommand[0].lower().rstrip("\r\n") not in {"user", "pass", "type", "port", "retr"}:
+                if client_command[0:4].lower().rstrip("\r\n") not in {"syst", "quit", "noop"}:
+                    sys.stdout.write("502 Command not implemented.\r\n")
+                    connect_socket.send("502 Command not implemented.\r\n".encode())
+                    continue
 
         if splitCommand[0].lower()  == "user":
             parameterError, crlfError = checkUserOrPass(splitCommand)
@@ -311,25 +317,28 @@ while True: # to keep the server always running and accept new connections once 
                 path = path.lstrip(" ")
                 if ord(path[0]) in {92,47} and len(path) > 1:
                     path = path[1:]
-                newPath = get_absolute_file_path(path)
-                if os.path.exists(newPath): 
-                    # connect_socket.send("True") # send a True to the client for not finding a file
+                # newPath = get_absolute_file_path(path)
+                # print(newPath)
+                # print(path)
+                if os.path.exists(path):
                     sys.stdout.write("150 File status okay.\r\n")
                     connect_socket.send("150 File status okay.\r\n".encode())
                     #socket connecting to client data (welcoming) socket for file transfer
+                    print(client_sent_hostAddress)  
+                    print(client_sent_portNumber)
+                    data_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     try:
-                        data_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  
-                        data_server_socket.connect(client_sent_hostAddress, client_sent_portNumber)
+                        data_server_socket.connect((client_sent_hostAddress, int(client_sent_portNumber)))
                     except:
                         sys.stdout.write("425 Can not open data connection.\r\n")
                         connect_socket.send("425 Can not open data connection.\r\n".encode())
                         continue
 
                     # reading bytes and sending them
-                    merchandise_server = open("./"+newPath, "r") #r for read, b for binary
+                    merchandise_server = open(path, "rb") #r for read, b for binary
                     merchandise_server_chunk = merchandise_server.read(1024)
                     while (merchandise_server_chunk):
-                        data_server_socket.send(merchandise_server_chunk.encode())
+                        data_server_socket.send(merchandise_server_chunk)
                         merchandise_server_chunk = merchandise_server.read(1024)
                     data_server_socket.close()
                     merchandise_server.close()
@@ -343,6 +352,3 @@ while True: # to keep the server always running and accept new connections once 
         else:
             sys.stdout.write("500 Syntax error, command unrecognized.\r\n")
             connect_socket.send("500 Syntax error, command unrecognized.\r\n".encode())
-
-
-
