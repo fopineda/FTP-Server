@@ -12,8 +12,7 @@ def checkConnect(request):
     # Function split the serverhost and serverport and checks the individually.
     alphabetList = list(string.ascii_lowercase)
     alphabetList.append(".")
-    int_digitList = list(range(0,10))
-    str_digitList = [str(r) for r in int_digitList]
+    digitList = list(range(0,10))
     serverHost = ""
     serverPort = ""
     serverHostError = False
@@ -25,18 +24,17 @@ def checkConnect(request):
         if len(request) == 2:
             serverHost = request[0].lstrip(" ")
             serverPort = request[1].lstrip(" ").rstrip("\n")
-            if serverHost[0] == "." or serverHost[0] in str_digitList:   # to check if the server hosts starts with a period
+            if serverHost[0] == "." or serverHost[0] in digitList:   # to check if the server hosts starts with a period
                 serverHostError = True
             for char in serverHost.lower():
-                if char not in str_digitList and char not in alphabetList:
-                    print(char)
+                if char not in digitList and char not in alphabetList:
                     serverHostError = True
                     break
             if not 0 <= int(serverPort) <= 65535:
                 serverPortNotInRange = True
             try: 
                 for num in serverPort:
-                    if int(num) not in int_digitList:
+                    if int(num) not in digitList:
                             serverPortNotDigits = True
             except Exception as err:
                 serverPortNotDigits = True
@@ -83,7 +81,7 @@ def isErrorConnect(rDict, request):
 def checkCode(code):
     # Function is given the code part of reply and parses it to see if it is indeed a value between 100 and 599 and
     # also if all the characters in the code are digits
-    int_digitList = list(range(0,10))
+    digitList = list(range(0,10))
     codeNotDigits = False
     codeNotInRange = False
     codeError = False
@@ -94,7 +92,7 @@ def checkCode(code):
         codeNotInRange = True
     try: 
         for num in code:
-            if int(num) not in int_digitList:
+            if int(num) not in digitList:
                 codeNotDigits = True
     except Exception as err:
         codeNotDigits = True
@@ -142,15 +140,11 @@ def assure_path_exists(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
-retrCount = 1
+retrCount = 0
 # Takes in the requests and loops throught them. It takes them one by one to see if it falls under connect, get, or quit
 # once there it will do the appropriate checks.
 requestDict = {}
-# for request in sys.stdin:
-#     sys.stdout.write(request)
-while True:
-    request = input()
-    request = request+"\n"
+for request in sys.stdin:
     sys.stdout.write(request)
     splitRequest = request.split(" ",1)
     if splitRequest[0].lower().rstrip("\n")  == "connect":  
@@ -159,15 +153,12 @@ while True:
             print("ERROR -- server-host") 
         elif serverPortError:
             print("ERROR -- server-port")       
-        else:
-            control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)   
+        else:   
             try:
                 # create control socket (FTP-control connection)
                 # Ex: CONNECT classroom.cs.unc.edu 9000
                 print("CONNECT accepted for FTP server at host "+serverHost+" and port "+serverPort)
-                # print(serverHost)
-                # print(type(serverHost))
-                # print(int(serverPort))
+                control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 control_socket.connect((serverHost, int(serverPort)))
             except:
                 print("CONNECT failed")
@@ -219,7 +210,6 @@ while True:
                 data_client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # #caled before bind to allow reusing the same port.
                 data_client_socket.bind((socket.gethostbyname(socket.gethostname()), int(requestDict.get("connect")))) #client hostname, command line arguement port number
                 data_client_socket.listen(1)
-
             except:
                 print("GET failed, FTP-data port not allocated")
                 continue
@@ -234,24 +224,22 @@ while True:
             control_socket.send(str("RETR "+pathname+"\r\n").encode())
             received_data = control_socket.recv(1024).decode()
             receiveReplies(received_data)
-
-
-            if received_data[0:3] == "150":
-                received_data = control_socket.recv(1024).decode()
-                receiveReplies(received_data)
-                assure_path_exists("./retr_filesXXX")  # Checks if retr_files exits, if not create, otherwise do nothing
+            
+            if received_data == "150 File status okay.\r\n":
+            # if int(received_data[0:4]) < 400:
+                assure_path_exists("./retr_files")  # Checks if retr_files exits, if not create, otherwise do nothing
                 connection_socket, addr = data_client_socket.accept()
                 str_retrCount = str(retrCount)
                 if retrCount < 10:
-                    str_retrCount = "00" + str_retrCount  # continue if 0-9 because should be single digit
+                    str_retrCount = "00" + str_retrCount
                 elif 10 <= retrCount < 100:
                     str_retrCount = "0"+ str_retrCount
                 else:
                     str_retrCount = str(retrCount)
-                merchandise_client = open("retr_filesXXX/file"+str_retrCount, "wb+")  ## take out Xs
+                merchandise_client = open("retr_files/file"+str_retrCount, "w+")
                 merchandise_client_chunk = connection_socket.recv(1024)
                 while merchandise_client_chunk:
-                    merchandise_client.write(merchandise_client_chunk)
+                    merchandise_client.write(merchandise_client_chunk.decode())
                     merchandise_client_chunk = connection_socket.recv(1024)
                 merchandise_client.close() 
                 connection_socket.close()
