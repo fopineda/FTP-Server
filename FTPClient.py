@@ -165,9 +165,6 @@ while True:
                 # create control socket (FTP-control connection)
                 # Ex: CONNECT classroom.cs.unc.edu 9000
                 print("CONNECT accepted for FTP server at host "+serverHost+" and port "+serverPort)
-                # print(serverHost)
-                # print(type(serverHost))
-                # print(int(serverPort))
                 control_socket.connect((serverHost, int(serverPort)))
             except:
                 print("CONNECT failed")
@@ -239,16 +236,14 @@ while True:
             if received_data[0:3] == "150":
                 received_data = control_socket.recv(1024).decode()
                 receiveReplies(received_data)
-                assure_path_exists("./retr_filesXXX")  # Checks if retr_files exits, if not create, otherwise do nothing
+                assure_path_exists("./retr_files")  # Checks if retr_files exits, if not create, otherwise do nothing
                 connection_socket, addr = data_client_socket.accept()
                 str_retrCount = str(retrCount)
-                if retrCount < 10:
-                    str_retrCount = "00" + str_retrCount  # continue if 0-9 because should be single digit
-                elif 10 <= retrCount < 100:
+                if 10 <= retrCount < 100:
                     str_retrCount = "0"+ str_retrCount
                 else:
                     str_retrCount = str(retrCount)
-                merchandise_client = open("retr_filesXXX/file"+str_retrCount, "wb+")  ## take out Xs
+                merchandise_client = open("retr_files/file"+str_retrCount, "wb+") ## HelloWorld.java not being copied correctly (client)
                 merchandise_client_chunk = connection_socket.recv(1024)
                 while merchandise_client_chunk:
                     merchandise_client.write(merchandise_client_chunk)

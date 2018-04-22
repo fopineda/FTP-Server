@@ -272,7 +272,6 @@ while True: # to keep the server always running and accept new connections once 
                 FTPList = []  ## Clearing the list
                 sys.stdout.write("221 Goodbye.\r\n")  
                 connect_socket.send("221 Goodbye.\r\n".encode())
-                # connect_socket.close()  
                 break
 
         elif splitCommand[0].lower()  == "port":
@@ -317,15 +316,12 @@ while True: # to keep the server always running and accept new connections once 
                 path = path.lstrip(" ")
                 if ord(path[0]) in {92,47} and len(path) > 1:
                     path = path[1:]
-                # newPath = get_absolute_file_path(path)
-                # print(newPath)
+                path = get_absolute_file_path(path)
                 # print(path)
                 if os.path.exists(path):
                     sys.stdout.write("150 File status okay.\r\n")
                     connect_socket.send("150 File status okay.\r\n".encode())
                     #socket connecting to client data (welcoming) socket for file transfer
-                    print(client_sent_hostAddress)  
-                    print(client_sent_portNumber)
                     data_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     try:
                         data_server_socket.connect((client_sent_hostAddress, int(client_sent_portNumber)))
@@ -334,7 +330,7 @@ while True: # to keep the server always running and accept new connections once 
                         connect_socket.send("425 Can not open data connection.\r\n".encode())
                         continue
 
-                    # reading bytes and sending them
+                    # reading bytes and sending them (whatever path was given the "GET ~~~" that is the path that it'll write to)
                     merchandise_server = open(path, "rb") #r for read, b for binary
                     merchandise_server_chunk = merchandise_server.read(1024)
                     while (merchandise_server_chunk):
@@ -352,6 +348,3 @@ while True: # to keep the server always running and accept new connections once 
         else:
             sys.stdout.write("500 Syntax error, command unrecognized.\r\n")
             connect_socket.send("500 Syntax error, command unrecognized.\r\n".encode())
-
-
-## ask about allowing the client to get from .../..../.../submissions/HW6/retr_files/phone.gif images from 
